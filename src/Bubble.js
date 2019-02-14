@@ -1,4 +1,3 @@
-/* eslint no-use-before-define: ["error", { "variables": false }] */
 
 import PropTypes from 'prop-types';
 import React from 'react';
@@ -6,23 +5,26 @@ import { Text, Clipboard, StyleSheet, TouchableWithoutFeedback, View, ViewPropTy
 
 import MessageText from './MessageText';
 import MessageImage from './MessageImage';
-import MessageVideo from './MessageVideo';
+import MessageVoice from './MessageVoice';
 
 import Time from './Time';
 import Color from './Color';
 
 import { isSameUser, isSameDay } from './utils';
+import MessageVideo from './MessageVideo';
 
-export default class Bubble extends React.Component {
+export default class Bubble extends React.PureComponent {
 
-  onLongPress = () => {
+  constructor(props) {
+    super(props);
+    this.onLongPress = this.onLongPress.bind(this);
+  }
+
+  onLongPress() {
     if (this.props.onLongPress) {
       this.props.onLongPress(this.context, this.props.currentMessage);
     } else if (this.props.currentMessage.text) {
-      const options =
-        this.props.optionTitles.length > 0
-          ? this.props.optionTitles.slice(0, 2)
-          : ['Copy Text', 'Cancel'];
+      const options = ['Copy Text', 'Cancel'];
       const cancelButtonIndex = options.length - 1;
       this.context.actionSheet().showActionSheetWithOptions(
         {
@@ -40,7 +42,7 @@ export default class Bubble extends React.Component {
         },
       );
     }
-  };
+  }
 
   handleBubbleToNext() {
     if (
@@ -101,6 +103,17 @@ export default class Bubble extends React.Component {
     return null;
   }
 
+  renderMessageVoice() {
+    if (this.props.currentMessage.voice) {
+      const { containerStyle, wrapperStyle, ...messageVoiceProps } = this.props;
+      if (this.props.renderMessageVoic) {
+        return this.props.renderMessageVoic(messageVoiceProps);
+      }
+      return <MessageVoice {...messageVoiceProps} />;
+    }
+    return null;
+  }
+
   renderTicks() {
     const { currentMessage } = this.props;
     if (this.props.renderTicks) {
@@ -140,7 +153,9 @@ export default class Bubble extends React.Component {
       }
       return (
         <View style={styles.usernameView}>
-          <Text style={[styles.username, this.props.usernameStyle]}>~ {currentMessage.user.name}</Text>
+          <Text style={[styles.username, this.props.usernameStyle]}>
+            ~ {currentMessage.user.name}
+          </Text>
         </View>
       );
     }
@@ -175,7 +190,8 @@ export default class Bubble extends React.Component {
               {this.renderMessageImage()}
               {this.renderMessageVideo()}
               {this.renderMessageText()}
-              <View style={[styles[this.props.position].bottom, this.props.bottomContainerStyle[this.props.position]]}>
+              {this.renderMessageVoice()}
+              <View style={[styles.bottom, this.props.bottomContainerStyle[this.props.position]]}>
                 {this.renderUsername()}
                 {this.renderTime()}
                 {this.renderTicks()}
@@ -208,10 +224,6 @@ const styles = {
     containerToPrevious: {
       borderTopLeftRadius: 3,
     },
-    bottom: {
-      flexDirection: 'row',
-      justifyContent: 'flex-start',
-    },
   }),
   right: StyleSheet.create({
     container: {
@@ -231,11 +243,11 @@ const styles = {
     containerToPrevious: {
       borderTopRightRadius: 3,
     },
-    bottom: {
-      flexDirection: 'row',
-      justifyContent: 'flex-end',
-    },
   }),
+  bottom: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+  },
   tick: {
     fontSize: 10,
     backgroundColor: Color.backgroundTransparent,
@@ -268,12 +280,12 @@ Bubble.defaultProps = {
   renderMessageImage: null,
   renderMessageVideo: null,
   renderMessageText: null,
+  renderMessageVoice: null,
   renderCustomView: null,
   renderUsername: null,
   renderTicks: null,
   renderTime: null,
   position: 'left',
-  optionTitles: ['Copy Text', 'Cancel'],
   currentMessage: {
     text: null,
     createdAt: null,
@@ -297,13 +309,13 @@ Bubble.propTypes = {
   renderMessageImage: PropTypes.func,
   renderMessageVideo: PropTypes.func,
   renderMessageText: PropTypes.func,
+  renderMessageVoice: PropTypes.func,
   renderCustomView: PropTypes.func,
   renderUsernameOnMessage: PropTypes.bool,
   renderUsername: PropTypes.func,
   renderTime: PropTypes.func,
   renderTicks: PropTypes.func,
   position: PropTypes.oneOf(['left', 'right']),
-  optionTitles: PropTypes.arrayOf(PropTypes.string),
   currentMessage: PropTypes.object,
   nextMessage: PropTypes.object,
   previousMessage: PropTypes.object,
